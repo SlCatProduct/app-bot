@@ -1,247 +1,161 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-############################################
-# SL CAT — app-bot (system + testslcatbot)
-# Ubuntu 22.04/24.04 one-shot installer
-############################################
+# -------- Config (can override via env/CLI) --------
+APP_NAME="testslcatbot"
+REPO_URL="https://github.com/SlCatProduct/app-bot.git"
+REPO_SUBDIR="testslcatbot"
+APP_DIR="/opt/app-bot/${REPO_SUBDIR}"
+NODE_VERSION_LTS="18"                   # Ubuntu compatible LTS
+SERVER_PORT="${SERVER_PORT:-3000}"      # server.js serves vip_configs.json on :3000
 
-# ---- Config you can tweak -----------------------------------------
-REPO_URL="${REPO_URL:-https://github.com/SlCatProduct/app-bot.git}"
-REPO_BRANCH="${REPO_BRANCH:-main}"
+# Read key=value args
+for arg in "$@"; do
+  case "$arg" in
+    *=*) export "$arg" ;;
+    *) echo "Ignoring arg: $arg" ;;
+  esac
+done
 
-APP_ROOT="${APP_ROOT:-/opt/app-bot}"
-SYS_DIR="${SYS_DIR:-${APP_ROOT}/system}"
-BOT_DIR="${BOT_DIR:-${APP_ROOT}/testslcatbot}"
+# Required secrets (can be empty now; interactive prompt later)
+TELEGRAM_TOKEN="${TELEGRAM_TOKEN:-}"
+FIREBASE_JSON_B64="${FIREBASE_JSON_B64:-}" # Optional if you scp the file
 
-SYS_PORT="${SYS_PORT:-3000}"
-TIMEZONE_DEFAULT="${TIMEZONE_DEFAULT:-Asia/Colombo}"
+# -------- Helpers --------
+log() { echo -e "\033[1;32m[+] $*\033[0m"; }
+warn(){ echo -e "\033[1;33m[!] $*\033[0m"; }
+err() { echo -e "\033[1;31m[!] $*\033[0m"; exit 1; }
 
-# ---- Must be root --------------------------------------------------
-if [[ "$(id -u)" -ne 0 ]]; then
-  echo "Run as root: sudo bash install.sh"; exit 1
-fi
+require_root(){
+  if [[ $EUID -ne 0 ]]; then
+    err "Please run as root: sudo bash install.sh ..."
+  fi
+}
 
+# -------- 0) Sanity / OS deps --------
+require_root
 export DEBIAN_FRONTEND=noninteractive
 
-# ---- Inputs --------------------------------------------------------
-read -rp "Domain for web admin (e.g. free.slcatehiteam.shop): " APP_DOMAIN
-APP_DOMAIN=${APP_DOMAIN:-free.slcatehiteam.shop}
-
-read -rp "Server timezone [${TIMEZONE_DEFAULT}]: " TZ_INPUT
-TZ_INPUT=${TZ_INPUT:-$TIMEZONE_DEFAULT}
-
-read -rp "Enable HTTPS via Let's Encrypt? [y/N]: " ENABLE_SSL
-ENABLE_SSL=${ENABLE_SSL:-N}
-
-echo
-echo "=== Telegram Bot ==="
-read -rp "Telegram Bot Token: " TELEGRAM_BOT_TOKEN
-if [[ -z "${TELEGRAM_BOT_TOKEN}" ]]; then echo "Bot token required"; exit 1; fi
-
-read -rp "FREE_ADMINS CSV [6191785700,7981133656,7348879007]: " FREE_ADMINS_CSV
-FREE_ADMINS_CSV=${FREE_ADMINS_CSV:-"6191785700,7981133656,7348879007"}
-
-read -rp "VIP_ADMINS  CSV [7981133656]: " VIP_ADMINS_CSV
-VIP_ADMINS_CSV=${VIP_ADMINS_CSV:-"7981133656"}
-
-echo
-echo "=== Firebase Service Account (Base64) ==="
-echo "Paste single-line base64 of firebase-adminsdk.json (use: base64 -w0 file.json)"
-read -rsp "FIREBASE_ADMIN_JSON_B64: " FIREBASE_ADMIN_JSON_B64
-echo
-
-read -rp "Admin username for /admin [admin]: " ADMIN_USER
-ADMIN_USER=${ADMIN_USER:-admin}
-read -rsp "Admin password for /admin [password123]: " ADMIN_PASS
-ADMIN_PASS=${ADMIN_PASS:-password123}; echo
-
-read -rp "Email for Let's Encrypt (if HTTPS=y) [admin@${APP_DOMAIN}]: " LE_EMAIL
-LE_EMAIL=${LE_EMAIL:-"admin@${APP_DOMAIN}"}
-
-echo
-echo "==> Summary"
-echo "Domain:        ${APP_DOMAIN}"
-echo "Timezone:      ${TZ_INPUT}"
-echo "HTTPS:         ${ENABLE_SSL}"
-echo "Repo:          ${REPO_URL} (${REPO_BRANCH})"
-echo "App root:      ${APP_ROOT}"
-echo "System port:   ${SYS_PORT}"
-echo
-
-# ---- OS deps -------------------------------------------------------
+log "Updating apt & installing base tools..."
 apt-get update -y
-apt-get upgrade -y
-apt-get install -y git curl unzip ufw nginx ca-certificates gnupg
+apt-get install -y curl git ca-certificates gnupg ufw
 
-timedatectl set-timezone "${TZ_INPUT}" || true
-
-# Node 20
-if ! command -v node >/dev/null 2>&1 || ! node -v | grep -q '^v20'; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+# -------- 1) Install Node.js (LTS) + PM2 --------
+if ! command -v node >/dev/null 2>&1; then
+  log "Installing Node.js ${NODE_VERSION_LTS}.x ..."
+  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION_LTS}.x | bash -
   apt-get install -y nodejs
 fi
 
-npm i -g pm2@latest
+log "Node version: $(node -v)"
+log "NPM version : $(npm -v)"
 
-# Firewall
-ufw allow OpenSSH || true
-ufw allow 80/tcp || true
-ufw allow 443/tcp || true
-yes | ufw enable || true
+if ! command -v pm2 >/dev/null 2>&1; then
+  log "Installing PM2..."
+  npm i -g pm2
+fi
 
-# ---- Clone or update repo -----------------------------------------
-mkdir -p "${APP_ROOT}"
-if [[ -d "${APP_ROOT}/.git" ]]; then
-  echo "Repo exists → pulling latest..."
-  git -C "${APP_ROOT}" fetch --all
-  git -C "${APP_ROOT}" checkout "${REPO_BRANCH}"
-  git -C "${APP_ROOT}" pull --ff-only origin "${REPO_BRANCH}"
+# -------- 2) Fetch code --------
+if [[ -d "$APP_DIR/.git" ]]; then
+  log "Repo exists — pulling latest..."
+  git -C "$APP_DIR" fetch --all --prune
+  git -C "$APP_DIR" reset --hard origin/main
 else
-  echo "Cloning repo..."
-  git clone --branch "${REPO_BRANCH}" --depth 1 "${REPO_URL}" "${APP_ROOT}"
+  log "Cloning repo..."
+  mkdir -p "$(dirname "$APP_DIR")"
+  git clone --depth 1 "$REPO_URL" "$(dirname "$APP_DIR")"
+  # ensure we end up in the subdir
 fi
 
-# Validate subfolders
-if [[ ! -d "${SYS_DIR}" ]] || [[ ! -d "${BOT_DIR}" ]]; then
-  echo "Expected folders not found: ${SYS_DIR} and/or ${BOT_DIR}"
-  exit 1
+cd "$APP_DIR"
+
+# -------- 3) Install Node deps --------
+log "Installing dependencies..."
+# Prefer pnpm if present, else npm
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm install --prod=false
+else
+  npm install --omit=dev
 fi
 
-# ---- Secrets & env -------------------------------------------------
-# Firebase JSON next to bot.js
-echo "${FIREBASE_ADMIN_JSON_B64}" | base64 -d > "${BOT_DIR}/firebase-adminsdk.json"
-chmod 640 "${BOT_DIR}/firebase-adminsdk.json"; chown root:root "${BOT_DIR}/firebase-adminsdk.json"
+# -------- 4) Secrets / config files --------
+# firebase-adminsdk.json (can come from B64 or existing file)
+if [[ -n "$FIREBASE_JSON_B64" ]]; then
+  log "Writing firebase-adminsdk.json from FIREBASE_JSON_B64 ..."
+  echo "$FIREBASE_JSON_B64" | base64 -d > "$APP_DIR/firebase-adminsdk.json"
+fi
 
-# Bot .env
-cat > "${BOT_DIR}/.env" <<EOF
-NODE_ENV=production
-TZ=${TZ_INPUT}
-TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-FREE_ADMINS_CSV=${FREE_ADMINS_CSV}
-VIP_ADMINS_CSV=${VIP_ADMINS_CSV}
-EOF
-chmod 640 "${BOT_DIR}/.env"
+if [[ ! -s "$APP_DIR/firebase-adminsdk.json" ]]; then
+  warn "firebase-adminsdk.json missing in $APP_DIR."
+  read -rp "Paste FIREBASE_JSON_B64 now (or leave empty if you already copied the file): " PASTE_B64 || true
+  if [[ -n "${PASTE_B64:-}" ]]; then
+    echo "$PASTE_B64" | base64 -d > "$APP_DIR/firebase-adminsdk.json"
+  fi
+fi
 
-# System .env
-SESSION_SECRET="$(openssl rand -hex 24)"
-cat > "${SYS_DIR}/.env" <<EOF
-NODE_ENV=production
-TZ=${TZ_INPUT}
-PORT=${SYS_PORT}
-SESSION_SECRET=${SESSION_SECRET}
-ADMIN_USERNAME=${ADMIN_USER}
-ADMIN_PASSWORD=${ADMIN_PASS}
-EOF
-chmod 640 "${SYS_DIR}/.env"
+# .env for runtime variables
+ENV_FILE="$APP_DIR/.env"
+touch "$ENV_FILE"
+grep -q '^TELEGRAM_TOKEN=' "$ENV_FILE" 2>/dev/null || {
+  if [[ -z "$TELEGRAM_TOKEN" ]]; then
+    read -rp "Enter TELEGRAM_TOKEN: " TELEGRAM_TOKEN
+  fi
+  echo "TELEGRAM_TOKEN=${TELEGRAM_TOKEN}" >> "$ENV_FILE"
+}
+grep -q '^SERVER_PORT=' "$ENV_FILE" 2>/dev/null || echo "SERVER_PORT=${SERVER_PORT}" >> "$ENV_FILE"
 
-# ---- Install deps --------------------------------------------------
-pushd "${BOT_DIR}" >/dev/null
-if [[ -f package-lock.json ]]; then npm ci --omit=dev; else npm install --omit=dev; fi
-popd >/dev/null
+# -------- 5) Patch code for env usage (safe token handling) --------
+# Replace any hardcoded TOKEN in bot*.js to use process.env.TELEGRAM_TOKEN
+shopt -s nullglob
+for f in "$APP_DIR"/bot*.js; do
+  if grep -q "const TOKEN = '" "$f"; then
+    log "Patching $f to use env TELEGRAM_TOKEN ..."
+    sed -i "s/const TOKEN = .*/const TOKEN = process.env.TELEGRAM_TOKEN;/" "$f"
+  fi
+done
 
-pushd "${SYS_DIR}" >/dev/null
-if [[ -f package-lock.json ]]; then npm ci --omit=dev; else npm install --omit=dev; fi
-popd >/dev/null
+# -------- 6) Open firewall for server.js --------
+log "Configuring UFW (allow 22, ${SERVER_PORT})..."
+ufw allow 22/tcp >/dev/null 2>&1 || true
+ufw allow "${SERVER_PORT}/tcp" >/dev/null 2>&1 || true
+yes | ufw enable >/dev/null 2>&1 || true
 
-# ---- Decide entry points ------------------------------------------
-# Adjust if your files are named differently
-BOT_ENTRY="bot.js"
-SYS_ENTRY="server.js"
-[[ -f "${BOT_DIR}/${BOT_ENTRY}" ]] || { echo "Missing ${BOT_ENTRY} in ${BOT_DIR}"; exit 1; }
-[[ -f "${SYS_DIR}/${SYS_ENTRY}" ]] || { echo "Missing ${SYS_ENTRY} in ${SYS_DIR}"; exit 1; }
-
-# ---- PM2 config ----------------------------------------------------
-cat > /opt/ecosystem.app-bot.cjs <<EOF
+# -------- 7) Create PM2 ecosystem & start --------
+log "Creating PM2 processes (bot.js + server.js)..."
+cat > "$APP_DIR/ecosystem.config.js" <<'EOF'
 module.exports = {
   apps: [
     {
       name: "slcat-bot",
-      cwd: "${BOT_DIR}",
-      script: "${BOT_ENTRY}",
+      script: "bot.js",
       env: {
-        NODE_ENV: "production",
-        TZ: "${TZ_INPUT}",
-        TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN}",
-        FREE_ADMINS_CSV: "${FREE_ADMINS_CSV}",
-        VIP_ADMINS_CSV: "${VIP_ADMINS_CSV}"
-      },
-      autorestart: true,
-      max_restarts: 20
+        NODE_ENV: "production"
+      }
     },
     {
-      name: "slcat-system",
-      cwd: "${SYS_DIR}",
-      script: "${SYS_ENTRY}",
+      name: "slcat-server",
+      script: "server.js",
       env: {
         NODE_ENV: "production",
-        TZ: "${TZ_INPUT}",
-        PORT: "${SYS_PORT}"
-      },
-      autorestart: true,
-      max_restarts: 20
+        PORT: process.env.SERVER_PORT || 3000
+      }
     }
   ]
 }
 EOF
 
-pm2 start /opt/ecosystem.app-bot.cjs
+# Export .env to both processes
+export $(grep -v '^#' "$ENV_FILE" | xargs -d '\n' -I {} echo {})
+
+pm2 start "$APP_DIR/ecosystem.config.js" --update-env
 pm2 save
-pm2 startup systemd -u $(whoami) --hp /root | bash || true
+pm2 startup systemd -u "$(logname)" --hp "/home/$(logname)" >/dev/null 2>&1 || true
 
-# ---- NGINX reverse proxy ------------------------------------------
-SITE="/etc/nginx/sites-available/${APP_DOMAIN}.conf"
-cat > "${SITE}" <<EOF
-server {
-  listen 80;
-  server_name ${APP_DOMAIN};
-
-  location / {
-    proxy_pass         http://127.0.0.1:${SYS_PORT};
-    proxy_http_version 1.1;
-    proxy_set_header   Upgrade \$http_upgrade;
-    proxy_set_header   Connection "upgrade";
-    proxy_set_header   Host \$host;
-    proxy_set_header   X-Real-IP \$remote_addr;
-    proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header   X-Forwarded-Proto \$scheme;
-  }
-
-  location ~* \.(js|css|png|jpg|jpeg|gif|svg|ico)$ {
-    expires 7d;
-    access_log off;
-    add_header Cache-Control "public, max-age=604800";
-    try_files \$uri @node;
-  }
-
-  location @node { proxy_pass http://127.0.0.1:${SYS_PORT}; }
-}
-EOF
-
-ln -sf "${SITE}" "/etc/nginx/sites-enabled/${APP_DOMAIN}.conf"
-rm -f /etc/nginx/sites-enabled/default
-nginx -t
-systemctl reload nginx
-
-# ---- HTTPS ---------------------------------------------------------
-if [[ "${ENABLE_SSL^^}" == "Y" ]]; then
-  apt-get install -y certbot python3-certbot-nginx
-  certbot --nginx -d "${APP_DOMAIN}" --agree-tos -m "${LE_EMAIL}" --redirect -n
-  systemctl reload nginx
-fi
-
-# ---- Done ----------------------------------------------------------
+log "All set ✅"
 echo
-echo "✅ Deployment complete."
-echo "Repo root: ${APP_ROOT}"
-echo "Bot:       ${BOT_DIR}  (pm2 app: slcat-bot)"
-echo "System:    ${SYS_DIR}  (pm2 app: slcat-system)"
-echo "Domain:    http://${APP_DOMAIN}/"
-[[ "${ENABLE_SSL^^}" == "Y" ]] && echo "HTTPS:     https://${APP_DOMAIN}/"
+echo "Bot logs      : pm2 logs slcat-bot --lines 200"
+echo "Server logs   : pm2 logs slcat-server --lines 200"
+echo "Server URL    : http://<your-ip>:${SERVER_PORT}/vip_configs.json"
 echo
-pm2 status
-echo
-echo "Useful:"
-echo "  pm2 logs slcat-bot"
-echo "  pm2 logs slcat-system"
-echo "  pm2 restart slcat-bot && pm2 restart slcat-system"
+echo "Update code   : sudo bash $APP_DIR/update.sh"
+echo "Uninstall     : sudo bash $APP_DIR/uninstall.sh"
