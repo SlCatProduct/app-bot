@@ -1,0 +1,7 @@
+[
+  {
+    "device_id": "d10b8dae1723681b",
+    "name": "VIP Fast Server 🇸🇬",
+    "config": "vless://abcd1234@example.com:443?path=%2F&security=none&encryption=none"
+  }
+]

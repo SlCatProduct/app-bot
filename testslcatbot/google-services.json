@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "720671227706",
+    "project_id": "sl-cat-vpn",
+    "storage_bucket": "sl-cat-vpn.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:720671227706:android:73159e72a9c6e48b3eda03",
+        "android_client_info": {
+          "package_name": "dev.dev7.example"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJMu_eWAi7UEiQ_FPx3cOKAW-Dp-uONbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "testslcatbot",
+  "version": "1.0.0",
+  "description": "SL CAT VIP Config Bot",
+  "main": "bot.js",
+  "scripts": {
+    "bot": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "moment-timezone": "^0.5.48",
+    "node-cron": "^4.0.7",
+    "node-telegram-bot-api": "^0.61.0",
+    "proper-lockfile": "^4.1.2",
+    "valid-url": "^1.0.9",
+    "firebase-admin": "^11.0.1",
+    "moment-timezone": "^0.5.43",
+    "node-cron": "^3.0.2",
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
+
+

@@ -1,0 +1,107 @@
+[
+  {
+    "device_id": "bb002e989b86b7e3",
+    "name": "VIP",
+    "config": "dmxlc3M6Ly83Y2JiZDU0Mi0zOGE0LTRiNTctYWQ5My03MzU0MjQ5NDY3MzVAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWZyZWUuc2xjYXRlaGl0ZWFtLnNob3AmdHlwZT13cyZzbmk9ZnJlZS5zbGNhdGVoaXRlYW0uc2hvcCNGcmVlK0NvbmZpZy1TTCtDQVQrRUhJK1RFQU0="
+  },
+  {
+    "device_id": "22e18ac6a314c68d",
+    "name": "Dialog Router Zoom",
+    "config": "dmxlc3M6Ly83YmU0MzJiYS1hOGEwLTQ1MDctYWM0YS05MGUzMjhhZTM4ZjNAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMDIyZTE4YWM2YTMxNGM2OGQ="
+  },
+  {
+    "device_id": "cf3e1a12dc13ea50",
+    "name": "Airtel 498",
+    "config": "dmxlc3M6Ly81YzVkNmIzMy02YzRhLTQ0ZWYtODk0Yi1jMjJiNDM5ODIyZTRAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMGNmM2UxYTEyZGMxM2VhNTA="
+  },
+  {
+    "device_id": "69c92c11d0b581a2",
+    "name": "Dialog Zoom Router",
+    "config": "dmxlc3M6Ly9mNWI3MGQyYS00MWY3LTQ1NGMtYmM2NS1lNzBlMDhiMTkzMjJAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMDY5YzkyYzExZDBiNTgxYTI="
+  },
+  {
+    "device_id": "aa014c8c017b2bd1",
+    "name": "Airtel 498",
+    "config": "dmxlc3M6Ly8yMWM4NmIyNy0yMzk1LTRmMDYtOWU2Ni1kMTY0NmM3MWUwNGNAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMGJkNzU4NmFiOTE3NmY5NDg="
+  },
+  {
+    "device_id": "f3a9b1eb05980eb3",
+    "name": "Mobitel Zoom",
+    "config": "dmxlc3M6Ly8yNjIyZGM3OC0zMDBkLTRmNzUtYWI0NC1mOGNlMGYyZGE1NjhAbWt0b3NzbC5jb206MjA5Nj9wYXRoPSUyRiZzZWN1cml0eT10bHMmZW5jcnlwdGlvbj1ub25lJmhvc3Q9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3AmdHlwZT13cyZzbmk9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3Ajc2wlMjBjYXQlMjB2cG4lMjAtJTIwZjNhOWIxZWIwNTk4MGViMw=="
+  },
+  {
+    "device_id": "1b8f4c3765ab8c99",
+    "name": "Mobitel Zoom",
+    "config": "dmxlc3M6Ly9hY2Y1N2RkYS0wNmQwLTRkYWYtOGNmZC1kZjc3YWM4NWIwNGFAbWt0b3NzbC5jb206MjA5Nj9wYXRoPSUyRiZzZWN1cml0eT10bHMmZW5jcnlwdGlvbj1ub25lJmhvc3Q9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3AmdHlwZT13cyZzbmk9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3Ajc2wlMjBjYXQlMjB2cG4lMjAtJTIwMzQ3MDk3MzM2N2MzOGQxNg=="
+  },
+  {
+    "device_id": "8f9a347fd6e96f06",
+    "name": "Dialog 132/348",
+    "config": "dm1lc3M6Ly9leUpoWkdRaU9pSjNiMjB1WTI4aUxDSmhhV1FpT2lJd0lpd2lZV3h3YmlJNklpSXNJbVp3SWpvaUlpd2lhRzl6ZENJNkltTnlZWHA1YjNkdVpYSXViR3NpTENKcFpDSTZJakF4WmpjeU1ETTVMVFl6WkRjdE5EYzVNeTA1WVRRMkxXUTNaakUxWVdNeVlUQmxZeUlzSW01bGRDSTZJbmR6SWl3aWNHRjBhQ0k2SWk4aUxDSndiM0owSWpvaU9EQWlMQ0p3Y3lJNklrWmhjM1JzZVdOeVlYcDVMWE5zSUdOaGRDQjJjRzRnTFNBeFlXUXhPV1F5WkRFMk16WXdPV1U0SWl3aWMyTjVJam9pWVhWMGJ5SXNJbk51YVNJNklpSXNJblJzY3lJNklpSXNJblI1Y0dVaU9pSWlMQ0oySWpvaU1pSjk="
+  },
+  {
+    "device_id": "2a9a8fad6c9d0cde",
+    "name": "Airtel 498",
+    "config": "dmxlc3M6Ly8zZmEzMTdlNC00ZWE1LTRlMzItODE5MC1lYmM4MDg5MDlmMTVAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UrYnkrQ3JhenktZzhjeWk1MWI="
+  },
+  {
+    "device_id": "7bb69b58c544621e",
+    "name": "Dialog 132/348",
+    "config": "dm1lc3M6Ly9leUpoWkdRaU9pSjNiMjB1WTI4aUxDSmhhV1FpT2lJd0lpd2lZV3h3YmlJNklpSXNJbVp3SWpvaUlpd2lhRzl6ZENJNkltTnlZWHA1YjNkdVpYSXViR3NpTENKcFpDSTZJak5tTkdaalpHUmlMVEUzWkRFdE5HWTBNeTA1WkdReUxXUXhaR1U0WW1ZeFpHUXpaQ0lzSW01bGRDSTZJbmR6SWl3aWNHRjBhQ0k2SWk4aUxDSndiM0owSWpvaU9EQWlMQ0p3Y3lJNklrWmhjM1JzZVdOeVlYcDVMWE5zSUdOaGRDQjJjRzRnTFNCaU4yVmpZV1k0TnpnMk5HWTRZMlJsSWl3aWMyTjVJam9pWVhWMGJ5SXNJbk51YVNJNklpSXNJblJzY3lJNklpSXNJblI1Y0dVaU9pSWlMQ0oySWpvaU1pSjk="
+  },
+  {
+    "device_id": "0420f726384cbf04",
+    "name": "Mobitel Zoom",
+    "config": "dmxlc3M6Ly81OTU2YmQzZi1jMzY2LTRlNDgtODY1MC03NjU2YjU4YzUyZWNAbWt0b3NzbC5jb206MjA5Nj9wYXRoPSUyRiZzZWN1cml0eT10bHMmZW5jcnlwdGlvbj1ub25lJmhvc3Q9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3AmdHlwZT13cyZzbmk9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3Ajc2wlMjBjYXQlMjB2cG4lMjAtJTIwZGQ0MTY2NTEyMTc5NWE1Ng=="
+  },
+  {
+    "device_id": "effc07c0d66e02cd",
+    "name": "Dialog Zoom",
+    "config": "dmxlc3M6Ly81ZjI0MzQ3Ni1lNGU3LTQxYjUtYWFmNS0yMGRlNDQxZmFmMzZAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UrYnkrQ3JhenktdzdlMnN5aTk="
+  },
+  {
+    "device_id": "e3446f01fbfc1175",
+    "name": "Airtel 498",
+    "config": "dmxlc3M6Ly8yMjg5Yzg4NC1kZDQzLTQ0ZmUtYjgyYS0wZDcyNzc5OTEzYTNAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UlMjBieSUyMENyYXp5LWN1dDhkY2xx"
+  },
+  {
+    "device_id": "03e7cada89b28788",
+    "name": "Airtel 498",
+    "config": "dmxlc3M6Ly8yMjg5Yzg4NC1kZDQzLTQ0ZmUtYjgyYS0wZDcyNzc5OTEzYTNAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UlMjBieSUyMENyYXp5LWN1dDhkY2xx"
+  },
+  {
+    "device_id": "261cc2eba8214caa",
+    "name": "Mobitel Zoom",
+    "config": "dmxlc3M6Ly9iYzU1NmRjNS02OWQ5LTQwYjAtYWRkYi0yNGI1ZjgzZjQ4YmNAbWt0b3NzbC5jb206MjA5Nj9wYXRoPSUyRiZzZWN1cml0eT10bHMmZW5jcnlwdGlvbj1ub25lJmhvc3Q9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3AmdHlwZT13cyZzbmk9Y3Jhenkuc2xjYXRlaGl0ZWFtLnNob3Ajc2wlMjBjYXQlMjB2cG4lMjAtJTIwMjYxY2MyZWJhODIxNGNhYQ=="
+  },
+  {
+    "device_id": "e8ea9383a8864bce",
+    "name": "Dialog Zoom",
+    "config": "dmxlc3M6Ly80OTAzYWM3Ny0zMzI3LTRjYTEtOWY3My1kOGU3N2IxZmJkOWFAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMGIyZDQzYzlkOGIwZWIyOGM="
+  },
+  {
+    "device_id": "1e71c91dfbabb46c",
+    "name": "Airtel",
+    "config": "dmxlc3M6Ly83NjU1M2E5NS0wZjc0LTRiODgtYjNhNi0zYjEzNmM5YmM2YmRAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1mYmNkbi5jb20mdHlwZT13cyZzbmk9ZmJjZG4uY29tI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMDFlNzFjOTFkZmJhYmI0NmM="
+  },
+  {
+    "device_id": "f295ca8fbe0aefc9",
+    "name": "Dialog 132",
+    "config": "dm1lc3M6Ly9leUpoWkdRaU9pSjNiMjB1WTI4aUxDSmhhV1FpT2lJd0lpd2lZV3h3YmlJNklpSXNJbVp3SWpvaUlpd2lhRzl6ZENJNkltTnlZWHA1YjNkdVpYSXViR3NpTENKcFpDSTZJalk0TldWbU1qVmtMV0kxWTJVdE5ETXlPUzA0TURSakxUVTNNbUZpTWpFME5tTXpaU0lzSW01bGRDSTZJbmR6SWl3aWNHRjBhQ0k2SWk4aUxDSndiM0owSWpvaU9EQWlMQ0p3Y3lJNklrWmhjM1JzZVdOeVlYcDVMWE5zSUdOaGRDQjJjRzRnTFNBM1ptTXhOVEZrT1dJM1l6VXdOMlk0SWl3aWMyTjVJam9pWVhWMGJ5SXNJbk51YVNJNklpSXNJblJzY3lJNklpSXNJblI1Y0dVaU9pSWlMQ0oySWpvaU1pSjk="
+  },
+  {
+    "device_id": "0ee0be788046be8d",
+    "name": "Dialog Zoom",
+    "config": "dmxlc3M6Ly80NzU2M2VlYy00OTIxLTQ2ZDQtYmU1OC1mNWRmZTYzNTY1MjlAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMDBlZTBiZTc4ODA0NmJlOGQ="
+  },
+  {
+    "device_id": "ae7d32b9bda0165d",
+    "name": "Hutch 169",
+    "config": "dmxlc3M6Ly82MGJlNWYzMi02YmQ1LTRlYzktOGRjZS03MzA2YzhlOWMwNmFAY3Jhenkuc2xjYXRlaGl0ZWFtLnNob3A6NDQzP3BhdGg9JTJGJnNlY3VyaXR5PXRscyZlbmNyeXB0aW9uPW5vbmUmaG9zdD1zdGF0aWMtd2ViLmxpa2VldmlkZW8uY29tJnR5cGU9d3Mmc25pPXN0YXRpYy13ZWIubGlrZWV2aWRlby5jb20jYWU3ZDMyYjliZGEwMTY1ZA=="
+  },
+  {
+    "device_id": "bb002e989b86b7e3",
+    "name": "ttetst",
+    "config": "dmxlc3M6Ly9jNGYzOGJjYi01MjJlLTRjMzQtYjBlOC1iYmZjNDYyNjFmMjBAem9vbS5zbGNhdGVoaXRlYW0uc2hvcDo0NDM/cGF0aD0lMkYmc2VjdXJpdHk9dGxzJmVuY3J5cHRpb249bm9uZSZob3N0PWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wJnR5cGU9d3Mmc25pPWNyYXp5LnNsY2F0ZWhpdGVhbS5zaG9wI3JldmVyc2UlMjBieSUyMENyYXp5LXNsJTIwY2F0JTIwdnBuJTIwLSUyMDBlZTBiZTc4ODA0NmJlOGQ="
+  }
+]
