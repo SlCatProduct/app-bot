@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time User Count</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+
+        .user-count {
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 20px;
+            background: #4caf50;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .user-count h2 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .system-info {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .system-info h3 {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .system-info p {
+            font-size: 18px;
+            margin-bottom: 10px;
+            background: #444;
+            padding: 10px;
+            border-radius: 8px;
+            color: #fff;
+        }
+
+        .system-info p span {
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #e53935;
+        }
+
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .user-count h2 {
+                font-size: 28px;
+            }
+
+            .system-info p {
+                font-size: 16px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            h1 {
+                font-size: 24px;
+            }
+
+            .user-count h2 {
+                font-size: 24px;
+            }
+
+            .system-info p {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Real-Time Active Users</h1>
+
+        <div class="user-count">
+            <h2>Active User Count: <span id="userCount1">Admin Only Show</span></h2>
+        </div>
+
+        <div class="system-info">
+            <h3>System Information:</h3>
+            <p id="os">Operating System: Loading...</p>
+            <p id="arch">Architecture: Loading...</p>
+            <p id="cpu">CPU Usage: Loading...</p>
+            <p id="ram">RAM Usage: Loading...</p>
+            <p id="local-ip">Local IP: Loading...</p>
+            <p id="public-ip">Public IP: Loading...</p>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const socket = io.connect("http://free.slcatehiteam.shop:3000");  // Server URL
+
+        // Check if the user is an admin (based on session status)
+        function checkIfAdmin() {
+            return localStorage.getItem('isAdmin') === 'true';  // Example check from localStorage
+        }
+
+        // Request user count based on admin status
+        socket.emit('request_user_count', { isAdmin: checkIfAdmin() });
+
+        // Listen for user count updates from the server
+        socket.on('user_count', (count) => {
+            document.getElementById('userCount').textContent = count;
+        });
+
+        // Fetch system info from the client-side and send it to the server
+        function getSystemInfo() {
+            const os = navigator.platform; // OS information
+            const arch = navigator.hardwareConcurrency ? 'x64' : 'x86'; // Architecture assumption
+
+            // Simulating CPU and RAM usage since browsers don't allow direct access to this data
+            const cpuUsage = Math.random() * 100;  // Simulating CPU usage
+            const ramUsage = Math.random() * 8;  // Simulating RAM usage in GB
+
+            // Local IP (can't get real local IP via JavaScript directly)
+            const localIP = 'N/A';  // This is a placeholder, cannot fetch local IP via browser directly
+            const publicIP = 'N/A'; // This will be fetched using an API
+
+            // Display the system info in the UI
+            document.getElementById('os').textContent = `Operating System: ${os}`;
+            document.getElementById('arch').textContent = `Architecture: ${arch}`;
+            document.getElementById('cpu').textContent = `CPU Usage: ${cpuUsage.toFixed(2)}%`;
+            document.getElementById('ram').textContent = `RAM Usage: ${ramUsage.toFixed(2)} GB`;
+
+            // Fetch public IP using an external API
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('public-ip').textContent = `Public IP: ${data.ip}`;
+                });
+
+            // Send system info to the server
+            const systemInfo = {
+                os: os,
+                arch: arch,
+                cpu_usage: cpuUsage.toFixed(2) + '%',
+                ram: ramUsage.toFixed(2) + ' GB',
+                local_ip: localIP,
+                public_ip: publicIP
+            };
+
+            socket.emit('send_system_info', systemInfo);
+        }
+
+        // Call the function to get system info
+        getSystemInfo();
+
+        // Logout function
+        function logout() {
+            window.location.href = '/logout';  // Redirect to the logout endpoint
+        }
+    </script>
+
+</body>
+
+</html>
