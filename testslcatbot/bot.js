@@ -27,12 +27,117 @@ const userStates = new Map();
 const bankDetails = {
   boc: `🏦 *Bank of Ceylon (BOC)*\n\n🔢 Account No: 6692413\n👤 Name: I P U KARUNARATHNE\n🏦 Branch: Pothuhera`,
   combank: `🏦 *Commercial Bank*\n\n🔢 Account No: 8020534130\n👤 Name: I M A KARUNARATHNE\n🏦 Branch: Polgahawela`,
-  peoples: `🏦 *People's Bank*\n\n🔢 Account No: 280200100053713\n👤 Name: I P U KARUNARATHNE\n🏦 Branch: Pothuhera`,
+  peoples: `🏦 *Commercial New Bank*\n\n🔢 Account No: 8027985799\n👤 Name: I P U KARUNARATHNE\n🏦 Branch: Polgahawela`,
   ezcash: `📱 *EZCash*\n\n📞 Mobile: 076-3083618\n👤 Name: SL CAT TEAM`,
   reload: `📲 *Dialog Reload*\n\n📞 Number: 074-0373416\n👤 Name: SL CAT TEAM`
 };
 
 const bankGifUrl = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWZiNTY1OTNicjJ1N2sxYmd0d3U4anQzeHlhNXIzbGpyYXlzNWY4biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/afnsG6ooo0FwbUm5Tw/giphy.gif';
+
+// === [ADD] Admin broadcast command ============================
+async function sendInBatches(chatIds, makeText, batchSize = 25, delayMs = 120) {
+  let sent = 0, failed = 0;
+  for (let i = 0; i < chatIds.length; i += batchSize) {
+    const batch = chatIds.slice(i, i + batchSize);
+    await Promise.all(batch.map(async (cid) => {
+      try {
+        await bot.sendMessage(cid, makeText(), { parse_mode: 'Markdown' });
+        sent++;
+      } catch (e) {
+        failed++;
+        console.error('broadcast send error ->', cid, e.message);
+      }
+    }));
+    // small delay between batches to respect rate limits
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return { sent, failed };
+}
+
+// Usage: /admincast your message here
+bot.onText(/\/admincast(?:\s+([\s\S]+))?/, async (msg, match) => {
+  const fromId = msg.from.id;
+  const chatId = msg.chat.id;
+
+  // only admins allowed
+  if (!isAllAdmin(fromId)) {
+    return bot.sendMessage(chatId, '❌ Admin only.');
+  }
+
+  const text = (match && match[1]) ? match[1].trim() : '';
+  if (!text) {
+    return bot.sendMessage(chatId, 'Usage: `/admincast your message`', { parse_mode: 'Markdown' });
+  }
+
+  try {
+    // load recipients from Firestore (exclude admins & bots)
+    const snap = await usersCol.get();
+    const all = [];
+    snap.forEach(d => all.push(d.data()));
+    const adminSet = new Set(ALL_ADMINS.map(String));
+    const unique = new Map(); // dedupe by chatId
+    all.forEach(u => {
+      if (!u) return;
+      if (u.is_bot) return;
+      if (adminSet.has(String(u.chatId))) return;         // exclude admin chats
+      if (adminSet.has(String(u.userId))) return;         // exclude admin users
+      unique.set(String(u.chatId), u.chatId);
+    });
+    const recipients = Array.from(unique.values());
+
+    if (!recipients.length) {
+      return bot.sendMessage(chatId, 'ℹ️ No users to broadcast.');
+    }
+
+    await bot.sendMessage(chatId, `📢 Broadcasting to *${recipients.length}* users...`, { parse_mode: 'Markdown' });
+
+    const header = `📢 *Admin Broadcast*\n\n`;
+    const { sent, failed } = await sendInBatches(recipients, () => `${header}${text}`);
+
+    await bot.sendMessage(chatId, `✅ Done.\nSent: *${sent}*\nFailed: *${failed}*`, { parse_mode: 'Markdown' });
+  } catch (e) {
+    console.error('admincast error:', e);
+    await bot.sendMessage(chatId, `❌ Broadcast error: ${e.message}`);
+  }
+});
+
+
+// === [ADD] User registry (Firestore) ==========================
+const usersCol = db.collection('bot_users');
+
+async function upsertUserFromMsg(msg) {
+  try {
+    if (!msg || !msg.from || !msg.chat) return;
+    const chatId = msg.chat.id;
+    const from = msg.from;
+    const deviceId = userDeviceMap[chatId] || null;
+
+    // avoid saving admins if you want; here we save all and exclude on send
+    const data = {
+      userId: from.id,
+      chatId: chatId,
+      username: from.username || null,
+      first_name: from.first_name || null,
+      last_name: from.last_name || null,
+      is_bot: !!from.is_bot,
+      deviceId: deviceId,
+      lastSeen: new Date().toISOString()
+    };
+    await usersCol.doc(String(chatId)).set(data, { merge: true });
+  } catch (e) {
+    console.error('upsertUserFromMsg error:', e);
+  }
+}
+
+// capture EVERY message/photo etc to keep registry fresh
+bot.on('message', (msg) => { upsertUserFromMsg(msg); });
+bot.on('photo',  (msg) => { upsertUserFromMsg(msg); });
+
+// also when /start happens, we already update userDeviceMap; save right away too
+bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
+  try { await upsertUserFromMsg(msg); } catch (_) {}
+});
+
 
 async function sendBankDetails(chatId, bankKey) {
   const details = bankDetails[bankKey];
@@ -130,11 +235,218 @@ async function loadSubscriptions() {
   return subs;
 }
 
-// Save subscription (add or update)
-async function saveSubscription(sub) {
-  await subsCol.doc(sub.deviceId).set(sub);
+async function sendConfigPage(chatId, type, page=0, pageSize=10){
+  const ref = type==='vip' ? vipConfigsDocRef : freeConfigsDocRef;
+  const list = await loadConfigs(ref);
+  const start = page*pageSize;
+  const slice = list.slice(start, start+pageSize);
+  if (!slice.length) return bot.sendMessage(chatId, 'No more items.');
+
+  let txt = `📄 ${type.toUpperCase()} Configs (page ${page+1})\n\n`;
+  slice.forEach((c,i)=>{
+    const line = type==='vip' ? decodeBase64(c.config) : c.config;
+    txt += `#${start+i+1}\n${c.device_id?`🆔 ${c.device_id}\n`:''}📛 ${c.name}\n🔗 ${line}\n\n`;
+  });
+  const totalPages = Math.ceil(list.length/pageSize);
+  const kb = [];
+  if (page>0) kb.push({ text:'⬅️ Prev', callback_data:`pg_${type}_${page-1}` });
+  if (page<totalPages-1) kb.push({ text:'Next ➡️', callback_data:`pg_${type}_${page+1}` });
+  return bot.sendMessage(chatId, txt, { parse_mode:'HTML', reply_markup:{ inline_keyboard:[kb] }});
 }
 
+handlers['list_vip'] = async (q)=>{ await sendConfigPage(q.message.chat.id, 'vip', 0); await bot.answerCallbackQuery(q.id); };
+handlers['list_free']= async (q)=>{ await sendConfigPage(q.message.chat.id, 'free',0); await bot.answerCallbackQuery(q.id); };
+handlers['pg_vip_0']=handlers['pg_free_0']=()=>{};
+
+bot.on('callback_query', async (q) => {
+  try {
+    // plan chooser
+    if (q.data && q.data.startsWith('plan:')) {
+      const [, deviceId, plan] = q.data.split(':'); // plan:njbjgh:1month
+      const chatId   = q.message.chat.id;
+      const userId   = q.from.id;
+      const username = q.from.username || '';
+      const today    = new Date().toISOString().slice(0,10);
+
+      if (!['1week','1month','3months','1year'].includes(plan)) {
+        await bot.answerCallbackQuery(q.id, { text: 'Invalid plan', show_alert: true });
+        return;
+      }
+
+      await saveSubscription({ userId, username, deviceId, plan, startDate: today });
+
+      await bot.answerCallbackQuery(q.id, { text: '✅ VIP activated' });
+      await bot.sendMessage(
+        chatId,
+        `🎉 VIP *${plan}* activated for \`${deviceId}\`.\n`+
+        `📅 Starts: *${today}*`,
+        { parse_mode: 'Markdown' }
+      );
+
+      // (optional) notify admins
+      for (const adminId of VIP_ADMINS) {
+        await bot.sendMessage(
+          adminId,
+          `🆕 VIP Activated\n👤 User: ${username ? '@'+username : `tg://user?id=${userId}`}\n🆔 ${deviceId}\n📦 ${plan}\n📅 ${today}`,
+          { disable_web_page_preview: true }
+        );
+      }
+      return; // 🔚 stop here so other handlers don’t consume
+    }
+
+    // ...existing callback routing (list_vip, list_free, bank buttons, etc.)
+
+  } catch (e) {
+    console.error('plan callback error', e);
+    try {
+      await bot.answerCallbackQuery(q.id, { text: 'Error', show_alert: true });
+    } catch (_) {}
+  }
+});
+
+
+bot.on('callback_query', async (q)=>{ /* router above */ });
+handlers.__pg = async (q)=>{
+  const [,type,pageStr] = q.data.split('_'); 
+  await sendConfigPage(q.message.chat.id, type, Number(pageStr));
+  await bot.answerCallbackQuery(q.id);
+};
+// register pattern in router:
+handlers['pg_vip_1']=handlers['pg_vip_2']=handlers['pg_free_1']=handlers['pg_free_2']=handlers.__pg;
+
+// --- Helpers for plans & reminders ---------------------------------
+function daysForPlan(plan){
+  return ({ '1week':7, '1month':30, '3months':90, '1year':365 })[plan] || 0;
+}
+function isoYMD(d){ return d.toISOString().slice(0,10); }
+
+// --- Reminder cron: DM users before expiry --------------------------
+async function scheduleExpiryReminders(){
+  try {
+    const subs = await loadSubscriptions();
+    const today = new Date();                   // server time
+    const todayYMD = today.toISOString().slice(0,10);
+
+    for (const s of subs){
+      // basic validation
+      if (!s.startDate || !s.plan || !s.userId || !s.deviceId) continue;
+
+      const start = new Date(s.startDate);
+      const exp = new Date(start);
+      exp.setDate(exp.getDate() + daysForPlan(s.plan));
+
+      // difference in whole days (ceil so partial day counts forward)
+      const diffDays = Math.ceil((exp - today)/86400000);
+
+      // We only care about 3,1,0 days remaining (0 = expires today)
+      if (![3,1,0].includes(diffDays)) continue;
+
+      // avoid duplicate notifications: store flags on the sub doc
+      const already = (s.reminders && s.reminders[String(diffDays)]) || false;
+      if (already) continue;
+
+      const msg = diffDays === 0
+        ? `⏰ *Final Notice*: Your VIP plan *(${s.plan})* expires *today*.\n🆔 Device: \`${s.deviceId}\`\n\nPlease renew to avoid interruption.`
+        : `⏰ Reminder: Your VIP plan *(${s.plan})* expires in *${diffDays} day(s)*.\n🆔 Device: \`${s.deviceId}\`\n\nRenew now to stay connected.`;
+
+      try {
+        await bot.sendMessage(s.userId, msg, { parse_mode: 'Markdown' });
+        // mark this reminder as sent
+        await subsCol.doc(s.deviceId).set({
+          reminders: { ...(s.reminders||{}), [String(diffDays)]: true },
+          lastReminderAt: todayYMD
+        }, { merge: true });
+      } catch (e) {
+        console.error('reminder DM failed', s.userId, e.message);
+      }
+    }
+  } catch (e) {
+    console.error('scheduleExpiryReminders error', e);
+  }
+}
+
+// run daily at 09:15 Colombo time
+cron.schedule('15 9 * * *', scheduleExpiryReminders, { timezone: 'Asia/Colombo' });
+// --- Expiry sweep: notify admins + delete expired late night --------
+cron.schedule('55 23 * * *', async () => {
+  console.log('Running nightly subscription expiry sweep...');
+  const today = new Date();
+  try {
+    const subs = await loadSubscriptions();
+    for (const sub of subs) {
+      if (!sub.startDate || !sub.plan) continue;
+      const startDate = new Date(sub.startDate);
+      const expiryDate = new Date(startDate);
+      expiryDate.setDate(expiryDate.getDate() + daysForPlan(sub.plan));
+
+      if (today >= expiryDate) {
+        const userLink = sub.username
+          ? `[@${sub.username}](https://t.me/${sub.username})`
+          : `[User](tg://user?id=${sub.userId})`;
+        const message = `
+🔔 *VIP Subscription Expired*
+
+👤 User: ${userLink}
+🆔 Device ID: \`${sub.deviceId}\`
+📅 Plan: ${sub.plan}
+📆 Expired On: ${expiryDate.toDateString()}
+
+⚠️ Please remove this device ID from your system.
+        `;
+        // NOTE: Telegram API doesn't accept arrays for chatId; loop if needed
+        try {
+          // If ALL_ADMINS is an array, send to each admin:
+          if (Array.isArray(ALL_ADMINS)) {
+            for (const adminId of ALL_ADMINS) {
+              await bot.sendMessage(adminId, message, { parse_mode: 'Markdown' });
+            }
+          } else {
+            await bot.sendMessage(ALL_ADMINS, message, { parse_mode: 'Markdown' });
+          }
+        } catch (e) { console.error('admin notify failed', e.message); }
+
+        // delete the expired subscription
+        await deleteSubscription(sub.deviceId);
+      }
+    }
+  } catch (err) {
+    console.error('Subscription expiry sweep error:', err);
+  }
+}, { timezone: 'Asia/Colombo' });
+
+
+// Save subscription (add or update)
+async function saveSubscription(sub) {
+  const start = sub.startDate ? new Date(sub.startDate) : new Date();
+  const days  = daysForPlan(sub.plan);
+  const exp   = new Date(start); exp.setDate(exp.getDate()+days);
+
+  await subsCol.doc(sub.deviceId).set({
+    userId: sub.userId,
+    username: sub.username || '',
+    deviceId: sub.deviceId,
+    plan: sub.plan,
+    startDate: isoYMD(start),
+    expiresAt: isoYMD(exp),
+    status: 'active'
+  }, { merge: true });
+}
+
+
+// nightly expiry sweep: status flip (keep your admin notices)
+cron.schedule('55 23 * * *', async () => {
+  const todayYMD = isoYMD(new Date());
+  const subs = await loadSubscriptions();
+  for (const s of subs){
+    if (!s.expiresAt) continue;
+    if (todayYMD >= s.expiresAt && s.status !== 'expired') {
+      await subsCol.doc(s.deviceId).set({ status: 'expired' }, { merge: true });
+
+      // (optional) remove VIP config for that device ID
+      // await deleteConfig(vipConfigsDocRef, s.deviceId);
+    }
+  }
+}, { timezone: 'Asia/Colombo' });
 // Delete subscription
 async function deleteSubscription(deviceId) {
   await subsCol.doc(deviceId).delete();
@@ -144,6 +456,21 @@ async function deleteSubscription(deviceId) {
 const userDeviceMap = {};
 
 // Telegram Bot Handlers
+bot.onText(/\/whenexpire/, async (msg)=>{
+  const chatId = msg.chat.id;
+  const deviceId = userDeviceMap[chatId];
+  if (!deviceId) return bot.sendMessage(chatId, '❌ Device ID not set. Use `/start <device_id>`');
+  const d = await subsCol.doc(deviceId).get();
+  if (!d.exists) return bot.sendMessage(chatId, 'ℹ️ No active subscription found.');
+
+  const s = d.data();
+  const start = new Date(s.startDate);
+  const exp = new Date(start); exp.setDate(exp.getDate() + daysForPlan(s.plan));
+  const left = Math.max(0, Math.ceil((exp - new Date())/86400000));
+  return bot.sendMessage(chatId,
+    `🧾 Plan: *${s.plan}*\n🗓️ Start: *${s.startDate}*\n⏳ Days left: *${left}*\n📆 Expires: *${exp.toDateString()}*`,
+    { parse_mode: 'Markdown' });
+});
 
 // Start command with optional device_id param
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
@@ -187,7 +514,7 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
     reply_markup: {
       inline_keyboard: [
         [{ text: "🏦 BOC", callback_data: "boc" }, { text: "🏦 Commercial", callback_data: "combank" }],
-        [{ text: "🏦 People's", callback_data: "peoples" }, { text: "📱 EZCash", callback_data: "ezcash" }, { text: "📲 Reload", callback_data: "reload" }]
+        [{ text: "🏦 Commercial New", callback_data: "peoples" }, { text: "📱 EZCash", callback_data: "ezcash" }, { text: "📲 Reload", callback_data: "reload" }]
       ]
     }
   });
@@ -339,31 +666,46 @@ bot.on('message', async (msg) => {
       return;
     }
 
-    const ref = state.type === 'vip' ? vipConfigsDocRef : freeConfigsDocRef;
-    const configs = await loadConfigs(ref);
+     const ref = state.type === 'vip' ? vipConfigsDocRef : freeConfigsDocRef;
+  const configs = await loadConfigs(ref);
+  const configEncoded = state.type === 'vip' ? encodeBase64(url) : url;
 
-    // 🔍 Encode if vip
-    const configEncoded = state.type === 'vip' ? encodeBase64(url) : url;
-
-    // ⚠️ Check if same device_id + same config already exists
-    const isAlreadyAdded = configs.some(c => c.device_id === state.device_id && c.config === configEncoded);
-
-    if (isAlreadyAdded) {
-      bot.sendMessage(chatId, '⚠️ This config already exists for that device.');
-      userStates.delete(userId);
-      return;
-    }
+  const isAlreadyAdded = configs.some(c => c.device_id === state.device_id && c.config === configEncoded);
+  if (isAlreadyAdded) {
+    bot.sendMessage(chatId, '⚠️ This config already exists for that device.');
+    userStates.delete(userId);
+    return;
+  }
 
     // ✅ Push new config
-    configs.push({
-      device_id: state.device_id,
-      name: state.name,
-      config: configEncoded
-    });
+     configs.push({ device_id: state.device_id, name: state.name, config: configEncoded });
+  await ref.set({ config_list: JSON.stringify(configs, null, 2) }, { merge: true });
 
-    await ref.set({ config_list: JSON.stringify(configs, null, 2) }, { merge: true });
+ // ✅ HERE: if VIP, immediately show plan selector
+  if (state.type === 'vip') {
+    await bot.sendMessage(chatId,
+      `✅ VIP config saved for \`${state.device_id}\`.\n\n🧾 Now choose the package:`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "1 Week",   callback_data: `plan:${state.device_id}:1week`  },
+              { text: "1 Month",  callback_data: `plan:${state.device_id}:1month` }
+            ],
+            [
+              { text: "3 Months", callback_data: `plan:${state.device_id}:3months`},
+              { text: "1 Year",   callback_data: `plan:${state.device_id}:1year`  }
+            ]
+          ]
+        }
+      }
+    );
+  } else {
+    await bot.sendMessage(chatId, '✅ Free config saved.');
+  }
 
-    bot.sendMessage(chatId, `✅ ${state.type.toUpperCase()} config saved.`);
+    
     userStates.delete(userId);
     return;
   }
